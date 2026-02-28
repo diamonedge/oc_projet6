@@ -10,7 +10,7 @@ import kagglehub, os
 def download_data(temp_dir:str) -> str:
     os.environ["KAGGLEHUB_CACHE"]=temp_dir
     path = kagglehub.dataset_download("prasad22/healthcare-dataset")
-    return path
+    return path+"/"+"healthcare_dataset.csv"
 
 def ensure_db_and_collection(uri: str, db_name: str, collection_name: str) -> None:
     print(uri)
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     DB_NAME = "medical_data"
     COLLECTION_NAME = "med_data_collection"
 
-    data_file_path=download_data("./")
+    data_file_path=download_data("temp/")
     ensure_db_and_collection(MONGODB_URI, DB_NAME, COLLECTION_NAME)
 
     n = insert_file_in_batches(
