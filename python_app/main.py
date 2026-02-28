@@ -118,8 +118,9 @@ if __name__ == "__main__":
     MONGODB_URI = "mongodb://"+DB_USER+":"+DB_PASSWORD+"@localhost:27017/"
     DB_NAME = "medical_data"
     COLLECTION_NAME = "med_data_collection"
+    TEMP_DIR="/app/temp/"
 
-    data_file_path=download_data("temp/")
+    data_file_path=download_data(TEMP_DIR)
     ensure_db_and_collection(MONGODB_URI, DB_NAME, COLLECTION_NAME)
 
     n = insert_file_in_batches(

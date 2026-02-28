@@ -9,7 +9,13 @@ services:
      - "27017:27017"
     networks: 
      - mongo-network
-
+  app_server:
+    depends_on:
+      -mongo
+    image: python_app
+    restart: always
+    volumes:
+      - ./temp:/app/temp:rw
 networks:
    mongo-network:
       driver: bridge
