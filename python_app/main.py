@@ -5,7 +5,7 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError, PyMongoError, CollectionInvalid
 import kagglehub, os
-
+import configparser
 
 def download_data(temp_dir:str) -> str:
     os.environ["KAGGLEHUB_CACHE"]=temp_dir
@@ -111,24 +111,18 @@ def insert_file_in_batches(
 
 
 if __name__ == "__main__":
-    # Exemple local sans authentification
-    DB_USER="root"
-    DB_PASSWORD="example"
-    DB_HOST="localhost"
-    MONGODB_URI = "mongodb://"+DB_USER+":"+DB_PASSWORD+"@localhost:27017/"
-    DB_NAME = "medical_data"
-    COLLECTION_NAME = "med_data_collection"
-    TEMP_DIR="/app/temp/"
+    config = configparser.ConfigParser()
+    config.read('params.ini')
 
-    data_file_path=download_data(TEMP_DIR)
-    ensure_db_and_collection(MONGODB_URI, DB_NAME, COLLECTION_NAME)
+    data_file_path=download_data(config['DEFAULT']['TempDir'])
+    ensure_db_and_collection(config['DEFAULT']['MongoDbUri'], config['DEFAULT']['Db_name'], config['DEFAULT']['Collection_Name'])
 
     n = insert_file_in_batches(
-        mongo_uri=MONGODB_URI,
-        db_name=DB_NAME,
-        collection_name=COLLECTION_NAME,
+        mongo_uri=config['DEFAULT']['MongoDbUri'],
+        db_name=config['DEFAULT']['Db_name'],
+        collection_name=config['DEFAULT']['Collection_Name'],
         file_path=data_file_path,
-        batch_size=2000,
+        batch_size=config['DEFAULT']['BatchSize'],
         ordered=False,
         delimiter=",",
     )
