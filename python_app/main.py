@@ -1,11 +1,9 @@
 from __future__ import annotations
-import csv
 from typing import Dict, Iterable, List, Optional
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError, PyMongoError, CollectionInvalid
-import kagglehub, os
-import configparser
+import kagglehub, os, csv ,configparser
 
 def download_data(temp_dir:str) -> str:
     os.environ["KAGGLEHUB_CACHE"]=temp_dir
@@ -113,10 +111,11 @@ def insert_file_in_batches(
 if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read('params.ini')
-
+    print("ETAPE 1 - connexion")
     data_file_path=download_data(config['DEFAULT']['TempDir'])
     ensure_db_and_collection(config['DEFAULT']['MongoDbUri'], config['DEFAULT']['Db_name'], config['DEFAULT']['Collection_Name'])
 
+    print("ETAPE 2 - INJECTION")
     n = insert_file_in_batches(
         mongo_uri=config['DEFAULT']['MongoDbUri'],
         db_name=config['DEFAULT']['Db_name'],
@@ -126,6 +125,6 @@ if __name__ == "__main__":
         ordered=False,
         delimiter=",",
     )
-    print(f"Documents insérés (au mieux): {n}")
+    print(f"Fin étape 2 - documents injectés : {n}")
 
 
