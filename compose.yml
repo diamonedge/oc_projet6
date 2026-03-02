@@ -3,6 +3,8 @@ services:
     image: mongo
     hostname: mongo-db
     container_name: mongo-db
+    volumes: 
+      - ~/mongo/data:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
