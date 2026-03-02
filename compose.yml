@@ -31,6 +31,7 @@ services:
       MONGODB_COLLECTION_NAME: med_data_collection
       PYTHON_TEMP_DIR: /app/temp/
       PYTHON_BATCH_SIZE: 2000
+      EXPECTED_FIELD_COUNT: 55500
 networks:
    mongo-network:
       driver: bridge
