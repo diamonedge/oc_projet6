@@ -3,6 +3,8 @@ services:
     image: mongo
     hostname: mongo-db
     container_name: mongo-db
+    volumes: 
+      - ~/mongo/data:/data/db
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
@@ -29,6 +31,7 @@ services:
       MONGODB_COLLECTION_NAME: med_data_collection
       PYTHON_TEMP_DIR: /app/temp/
       PYTHON_BATCH_SIZE: 2000
+      EXPECTED_FIELD_COUNT: 55500
 networks:
    mongo-network:
       driver: bridge

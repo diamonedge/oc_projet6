@@ -1,12 +1,17 @@
-import os
-import pytest
+import os, pytest, unittest, configparser
 from pymongo import MongoClient
+
+def _get_Config():
+    config = configparser.ConfigParser()
+    config.read('params.ini')
+    return config
 
 
 def _get_collection():
-    uri = os.environ["MONGODB_URI"]
-    db_name = os.environ["DB_NAME"]
-    coll_name = os.environ["COLLECTION_NAME"]
+    config = _get_Config()
+    uri = config['DEFAULT']['MongoDbUri']
+    db_name = config['DEFAULT']['Db_name']
+    coll_name = config['DEFAULT']['Collection_Name']
     client = MongoClient(uri)
     return client, client[db_name][coll_name]
 
@@ -36,8 +41,9 @@ def test_random_document_field_count_or_schema():
         # On ignore _id (ajouté par MongoDB)
         fields = set(doc.keys()) - {"_id"}
 
-        expected_fields = os.environ.get("EXPECTED_FIELDS")
-        expected_count = os.environ.get("EXPECTED_FIELD_COUNT")
+        config = _get_Config()
+        expected_fields = "Admission Type,Age,Billing Amount,Blood Type,Date of Admission,Discharge Date,Doctor,Gender,Hospital,Insurance Provider,Medical Condition,Medication,Name,Room Number,Test Results"
+        expected_count = config['TEST']['EXPECTED_FIELD_COUNT']
 
         if expected_fields:
             expected = {f.strip() for f in expected_fields.split(",") if f.strip()}
