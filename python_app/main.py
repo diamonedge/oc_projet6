@@ -121,7 +121,7 @@ if __name__ == "__main__":
         db_name=config['DEFAULT']['Db_name'],
         collection_name=config['DEFAULT']['Collection_Name'],
         file_path=data_file_path,
-        batch_size=config['DEFAULT']['BatchSize'],
+        batch_size=int(config['DEFAULT']['BatchSize']),
         ordered=False,
         delimiter=",",
     )
