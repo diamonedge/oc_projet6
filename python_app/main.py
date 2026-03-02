@@ -1,16 +1,19 @@
 from __future__ import annotations
-import csv
 from typing import Dict, Iterable, List, Optional
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError, PyMongoError, CollectionInvalid
-import kagglehub, os
-
+import kagglehub, os, csv ,configparser
 
 def download_data(temp_dir:str) -> str:
     os.environ["KAGGLEHUB_CACHE"]=temp_dir
     path = kagglehub.dataset_download("prasad22/healthcare-dataset")
     return path+"/"+"healthcare_dataset.csv"
+
+def getNumberOflines(file_path_in:str) -> int:
+    with open(file_path_in, "rb") as f:
+        num_lines = sum(1 for _ in f)
+    return num_lines
 
 def ensure_db_and_collection(uri: str, db_name: str, collection_name: str) -> None:
     print(uri)
@@ -47,11 +50,7 @@ def batched(iterable: Iterable[Dict], batch_size: int) -> Iterable[List[Dict]]:
         yield batch
 
 
-def csv_rows_as_documents(
-    file_path: str,
-    delimiter: str = ",",
-    encoding: str = "utf-8",
-) -> Iterable[Dict]:
+def csv_rows_as_documents(file_path: str, delimiter: str = ",", encoding: str = "utf-8",) -> Iterable[Dict]:
     """Lit un CSV et produit un dict par ligne (en supprimant les lignes vides)."""
     with open(file_path, "r", encoding=encoding, newline="") as f:
         reader = csv.DictReader(f, delimiter=delimiter)
@@ -62,16 +61,7 @@ def csv_rows_as_documents(
                 yield doc
 
 
-def insert_file_in_batches(
-    mongo_uri: str,
-    db_name: str,
-    collection_name: str,
-    file_path: str,
-    batch_size: int = 1000,
-    ordered: bool = False,
-    delimiter: str = ",",
-    encoding: str = "utf-8",
-) -> int:
+def insert_file_in_batches( mongo_uri: str,db_name: str, collection_name: str, file_path: str,  batch_size: int = 1000, ordered: bool = False,delimiter: str = ",",    encoding: str = "utf-8",) -> int:
     """
     Insère un fichier CSV dans MongoDB par lots.
     - ordered=False : continue même si une insertion échoue dans le lot (meilleur débit).
@@ -92,8 +82,6 @@ def insert_file_in_batches(
                 result = collection.insert_many(batch, ordered=ordered)
                 inserted_total += len(result.inserted_ids)
             except BulkWriteError as e:
-                # Cas typique : violation d'un index unique, etc.
-                # Avec ordered=False, MongoDB insère ce qu'il peut.
                 details = e.details or {}
                 inserted = details.get("nInserted")
                 if isinstance(inserted, int):
@@ -111,26 +99,33 @@ def insert_file_in_batches(
 
 
 if __name__ == "__main__":
-    # Exemple local sans authentification
-    DB_USER="root"
-    DB_PASSWORD="example"
-    DB_HOST="localhost"
-    MONGODB_URI = "mongodb://"+DB_USER+":"+DB_PASSWORD+"@localhost:27017/"
-    DB_NAME = "medical_data"
-    COLLECTION_NAME = "med_data_collection"
+    print("Initialisation de la configuration")
+    config = configparser.ConfigParser()
+    config.read('params.ini')
 
-    data_file_path=download_data("temp/")
-    ensure_db_and_collection(MONGODB_URI, DB_NAME, COLLECTION_NAME)
+    print("Etape 1 - téléchargement")
+    data_file_path=download_data(config['DEFAULT']['TempDir'])
+    number_of_lines=getNumberOflines(data_file_path)
+    print(f"Fin etape 1 - fichier présent avec {number_of_lines} lignes.")
 
+    print("Etape 2 - connexion et création du schema")
+    ensure_db_and_collection(config['DEFAULT']['MongoDbUri'], config['DEFAULT']['Db_name'], config['DEFAULT']['Collection_Name'])
+
+    print("Etape 3 - Injection")
     n = insert_file_in_batches(
-        mongo_uri=MONGODB_URI,
-        db_name=DB_NAME,
-        collection_name=COLLECTION_NAME,
+        mongo_uri=config['DEFAULT']['MongoDbUri'],
+        db_name=config['DEFAULT']['Db_name'],
+        collection_name=config['DEFAULT']['Collection_Name'],
         file_path=data_file_path,
-        batch_size=2000,
+        batch_size=int(config['DEFAULT']['BatchSize']),
         ordered=False,
         delimiter=",",
     )
-    print(f"Documents insérés (au mieux): {n}")
+    
+    print(f"Fin étape 3 - documents injectés : {n}")
 
+    if (n+1)==number_of_lines:
+        print("Injection terminée avec succès")
+    else:
+        print("Nombre de lignes inserée différent du nombre dans le fichier")
 
