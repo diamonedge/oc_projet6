@@ -22,13 +22,13 @@ services:
     networks:
       - mongo-network
     environment:
-      MONGODB_USER : root
-      MONGODB_PASSWORD : example
-      MONGODB_HOST : mongo-db
-      MONGODB_DBNAME : medial_data
-      MONGODB_COLLECTION_NAME : med_data_collection
-      PYTHON_TEMP_DIR : /app/temp/
-      PYTHON_BATCH_SIZE : 2000
+      MONGODB_USER: root
+      MONGODB_PASSWORD: example
+      MONGODB_HOST: mongo-db
+      MONGODB_DBNAME: medial_data
+      MONGODB_COLLECTION_NAME: med_data_collection
+      PYTHON_TEMP_DIR: /app/temp/
+      PYTHON_BATCH_SIZE: 2000
 networks:
    mongo-network:
       driver: bridge
