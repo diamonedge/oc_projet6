@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional,Any
 from pymongo import MongoClient
 from pymongo.collection import Collection
-from pymongo.errors import BulkWriteError, PyMongoError, CollectionInvalid
+from pymongo.errors import BulkWriteError, PyMongoError, CollectionInvalid,OperationFailure
 import kagglehub, os, csv ,configparser
 
 def download_data(temp_dir:str) -> str:
@@ -97,6 +97,46 @@ def insert_file_in_batches( mongo_uri: str,db_name: str, collection_name: str, f
     finally:
         client.close()
 
+def ensure_readonly_user(mongo_uri: str, username: str, password: str) -> Dict[str, Any]:
+    ROLE_NAME = "readonly"
+    diag: Dict[str, Any] = {"db": None,"role_created": False,"user_created": False,"role_granted": False,"password_updated": False, }
+
+    client = MongoClient(mongo_uri)
+    
+    try:
+        db = client.get_default_database(default="admin")
+        diag["db"] = db.name
+
+        # 1) S'assurer que le rôle 'readonly' existe (custom role qui hérite de 'read')
+        role_info = db.command("rolesInfo", ROLE_NAME)
+
+        if not role_info.get("roles"):
+            db.command("createRole",ROLE_NAME,privileges=[],roles=[{"role": "read", "db": db.name}],)
+            diag["role_created"] = True
+
+        # 2) Créer ou mettre à jour l'utilisateur
+        user_info = db.command("usersInfo", username)
+
+        if not user_info.get("users"):
+            db.command("createUser",username,pwd=password,roles=[{"role": ROLE_NAME, "db": db.name}],mechanisms=["SCRAM-SHA-256"],)
+            diag["user_created"] = True
+
+        else:
+            # Ajout du rôle (n'écrase pas les rôles existants)
+            db.command("grantRolesToUser",username,roles=[{"role": ROLE_NAME, "db": db.name}],)
+            diag["role_granted"] = True
+
+        # Mise à jour du mot de passe (sans toucher aux rôles)
+        db.command("updateUser",username,pwd=password,)
+        diag["password_updated"] = True
+
+        return diag
+
+    except OperationFailure as e:
+        # Typiquement : droits insuffisants, authSource incorrect, etc.
+        raise RuntimeError(f"Erreur MongoDB (droits/commande) : {e}") from e
+    finally:
+        client.close()
 
 if __name__ == "__main__":
     print("Initialisation de la configuration")
@@ -108,8 +148,9 @@ if __name__ == "__main__":
     number_of_lines=getNumberOflines(data_file_path)
     print(f"Fin etape 1 - fichier présent avec {number_of_lines} lignes.")
 
-    print("Etape 2 - connexion et création du schema")
+    print("Etape 2 - Connexion et paramétrage")
     ensure_db_and_collection(config['DEFAULT']['MongoDbUri'], config['DEFAULT']['Db_name'], config['DEFAULT']['Collection_Name'])
+    ensure_readonly_user(config['DEFAULT']['MongoDbUri'], config['USERS_ROLES']['READER_USER_NAME'], config['USERS_ROLES']['READER_USER_PASSWORD'])
 
     print("Etape 3 - Injection")
     n = insert_file_in_batches(

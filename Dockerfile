@@ -8,5 +8,5 @@ RUN pip install --no-cache-dir -r requirements.pip
 
 COPY . .
 
-CMD [ "bash", "entry_point.sh" ]
+CMD [ "bash", "entrypoint.sh" ]
 
