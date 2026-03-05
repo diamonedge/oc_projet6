@@ -27,5 +27,11 @@ Chaque document dispose des colonnes suivantes :
 - Room Number
 - Test Results
 
+# Authentifiaction et utilisateurs
+- 2 utilisateurs sont paramétrés par défaut. Un administrateur ayant tous les droits ainsi qu'un utilisateur lecteur pour la consultation
+- Par défaut le fichier `compose.yml` contient les identifiants administrateurs. Il est possible de les changer avant ou après la création.
+- le mot de passe de l'utilisateur `reader_user` est généré aléatoirement à la création du container. Les identifiants peuvent être modifiés avant ou après
+- Pour se connecter il est possible d'utiliser un client mongo comme mongosh (https://www.mongodb.com/try/download/shell)  ou encore d'ajouter un container comme vu ici https://hub.docker.com/_/mongo, cette dernière possibilité met à disposition une IHM web selon la configuration souhaitée
+
 # Relance docker compose et construction image
 docker compose down && docker compose build && docker compose up -d && docker logs -f oc_projet6-app_server-1
